@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.10527.47 main
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RandomFortuneApp.AppHost", "RandomFortuneApp.AppHost\RandomFortuneApp.AppHost.csproj", "{F5904FFB-8C6E-4E8E-B7B5-18A98E9E6BDD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RandomFortuneApp.ServiceDefaults", "RandomFortuneApp.ServiceDefaults\RandomFortuneApp.ServiceDefaults.csproj", "{66EF3D12-1CE6-584F-B3DB-C0D2A81BD290}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F5904FFB-8C6E-4E8E-B7B5-18A98E9E6BDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F5904FFB-8C6E-4E8E-B7B5-18A98E9E6BDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F5904FFB-8C6E-4E8E-B7B5-18A98E9E6BDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F5904FFB-8C6E-4E8E-B7B5-18A98E9E6BDD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66EF3D12-1CE6-584F-B3DB-C0D2A81BD290}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66EF3D12-1CE6-584F-B3DB-C0D2A81BD290}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66EF3D12-1CE6-584F-B3DB-C0D2A81BD290}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66EF3D12-1CE6-584F-B3DB-C0D2A81BD290}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E6BB0D74-3C26-429C-AA2C-D7B839B545CC}
+	EndGlobalSection
+EndGlobal
