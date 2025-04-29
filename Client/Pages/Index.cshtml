@@ -20,30 +20,30 @@
         <div class="row mb-4">
             <div class="col-md-4">
                 <h5>Service Types</h5>
-                @foreach (var option in Model.ServiceTypes)
+                @foreach (var option in Model.AllServiceTypes)
                 {
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="ServiceTypes" value="@option" id="svc_@option" @(Model.ServiceTypes?.Contains(option) == true ? "checked" : "") onchange="this.form.submit()" />
+                        <input class="form-check-input" type="checkbox" name="SelectedServiceTypes" value="@option" id="svc_@option" @(Model.SelectedServiceTypes?.Contains(option) == true ? "checked" : "") onchange="this.form.submit()" />
                         <label class="form-check-label" for="svc_@option">@option</label>
                     </div>
                 }
             </div>
             <div class="col-md-4">
                 <h5>Pet Types</h5>
-                @foreach (var option in Model.PetTypes)
+                @foreach (var option in Model.AllPetTypes)
                 {
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="PetTypes" value="@option" id="pet_@option" @(Model.PetTypes?.Contains(option) == true ? "checked" : "") onchange="this.form.submit()" />
+                        <input class="form-check-input" type="checkbox" name="SelectedPetTypes" value="@option" id="pet_@option" @(Model.SelectedPetTypes?.Contains(option) == true ? "checked" : "") onchange="this.form.submit()" />
                         <label class="form-check-label" for="pet_@option">@option</label>
                     </div>
                 }
             </div>
             <div class="col-md-4">
                 <h5>Badges</h5>
-                @foreach (var option in Model.Badges)
+                @foreach (var option in Model.AllBadges)
                 {
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="Badges" value="@option" id="badge_@option" @(Model.Badges?.Contains(option) == true ? "checked" : "") onchange="this.form.submit()" />
+                        <input class="form-check-input" type="checkbox" name="SelectedBadges" value="@option" id="badge_@option" @(Model.SelectedBadges?.Contains(option) == true ? "checked" : "") onchange="this.form.submit()" />
                         <label class="form-check-label" for="badge_@option">@option</label>
                     </div>
                 }
@@ -84,11 +84,11 @@
         <div class="d-flex justify-content-between my-4">
             @if (Model.PageNumber > 1)
             {
-                <a asp-page="Index" asp-route-Location="@Model.Location" asp-route-ServiceTypes="@Model.ServiceTypes" asp-route-PetTypes="@Model.PetTypes" asp-route-Badges="@Model.Badges" asp-route-PageNumber="@(Model.PageNumber-1)" class="btn btn-secondary">Previous</a>
+                <a asp-page="Index" asp-route-Location="@Model.Location" asp-route-ServiceTypes="@Model.SelectedServiceTypes" asp-route-PetTypes="@Model.SelectedPetTypes" asp-route-Badges="@Model.SelectedBadges" asp-route-PageNumber="@(Model.PageNumber - 1)" class="btn btn-secondary">Previous</a>
             }
             @if (Model.Sitters.Count == Model.PageSize)
             {
-                <a asp-page="Index" asp-route-Location="@Model.Location" asp-route-ServiceTypes="@Model.ServiceTypes" asp-route-PetTypes="@Model.PetTypes" asp-route-Badges="@Model.Badges" asp-route-PageNumber="@(Model.PageNumber+1)" class="btn btn-primary ms-auto">Next</a>
+                <a asp-page="Index" asp-route-Location="@Model.Location" asp-route-ServiceTypes="@Model.SelectedServiceTypes" asp-route-PetTypes="@Model.SelectedPetTypes" asp-route-Badges="@Model.SelectedBadges" asp-route-PageNumber="@(Model.PageNumber + 1)" class="btn btn-primary ms-auto">Next</a>
             }
         </div>
     }

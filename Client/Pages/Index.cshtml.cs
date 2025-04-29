@@ -12,32 +12,44 @@ public class IndexModel : PageModel
     {
         this.sitterApiClient = sitterApiClient;
     }
-     [BindProperty(SupportsGet = true)]
-     public int PageNumber { get; set; } = 1;
-     [BindProperty(SupportsGet = true)]
-     public int PageSize { get; set; } = 8;
-     [BindProperty(SupportsGet = true)]
-     public string? Location { get; set; }
-     [BindProperty(SupportsGet = true)]
-     public List<string>? ServiceTypes { get; set; }
-     [BindProperty(SupportsGet = true)]
-     public List<string>? PetTypes { get; set; }
-     [BindProperty(SupportsGet = true)]
-     public List<string>? Badges { get; set; }
 
-     public List<SitterDto> Sitters { get; set; } = new();
+    // Pagination properties
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public int PageSize { get; set; } = 8;
+    [BindProperty(SupportsGet = true)]
+    public string? Location { get; set; }
+    [BindProperty(SupportsGet = true)]
+    public List<string>? SelectedServiceTypes { get; set; }
+    [BindProperty(SupportsGet = true)]
+    public List<string>? SelectedPetTypes { get; set; }
+    [BindProperty(SupportsGet = true)]
+    public List<string>? SelectedBadges { get; set; }
 
-     public async Task OnGetAsync()
-     {
+    // Dynamic filter options
+    public List<string> AllServiceTypes { get; set; } = new List<string>();
+    public List<string> AllPetTypes { get; set; } = new List<string>();
+    public List<string> AllBadges { get; set; } = new List<string>();
+
+    public List<SitterDto> Sitters { get; set; } = new();
+
+    public async Task OnGetAsync()
+    {
+        // Load available filters
+        AllServiceTypes = await sitterApiClient.GetServiceTypesAsync();
+        AllPetTypes = await sitterApiClient.GetPetTypesAsync();
+        AllBadges = await sitterApiClient.GetBadgesAsync();
+
         Sitters = await sitterApiClient.SearchSittersAsync(
             location: Location,
             minPrice: null,
             maxPrice: null,
             minRating: null,
-            serviceTypes: ServiceTypes,
-            petTypes: PetTypes,
-            badges: Badges,
+            serviceTypes: SelectedServiceTypes,
+            petTypes: SelectedPetTypes,
+            badges: SelectedBadges,
             pageNumber: PageNumber,
             pageSize: PageSize);
-     }
- }
+    }
+}

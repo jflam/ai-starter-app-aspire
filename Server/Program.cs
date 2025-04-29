@@ -62,6 +62,14 @@ app.MapGet("/api/v1/sitters/search", async (PetBnBDbContext db,
         })
         .ToListAsync();
     return Results.Ok(results);
-});
+ });
 
-app.Run();
+ // Filter options endpoints
+ app.MapGet("/api/v1/filters/service-types", async (PetBnBDbContext db) =>
+     Results.Ok(await db.ServiceTypes.Select(st => st.Name).ToListAsync()));
+ app.MapGet("/api/v1/filters/pet-types", async (PetBnBDbContext db) =>
+     Results.Ok(await db.PetTypes.Select(pt => pt.Name).ToListAsync()));
+ app.MapGet("/api/v1/filters/badges", async (PetBnBDbContext db) =>
+     Results.Ok(await db.Badges.Select(b => b.Name).ToListAsync()));
+
+ app.Run();

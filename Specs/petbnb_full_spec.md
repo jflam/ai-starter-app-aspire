@@ -1,18 +1,33 @@
-# PetBnB Full Implementation Spec
+# PetBnB Full Implementation Spec (v2)
 
-This spec describes all low‑level changes to transform the original RandomFortuneApp into PetBnB with database schema, API, client UI, migrations, seeding, and AppHost wiring.
-**Note**: Update *all* service references—DbContext registrations, connection string keys, appsettings values, AppHost wiring, and code references—from the original names (`FortuneDbContext`, `fortunesdb`) to the new PetBnB names (`PetBnBDbContext`, `petbnbdb`) consistently across the solution to avoid mismatches.
+## Overview
+This spec describes all low‑level changes to transform the original RandomFortuneApp into PetBnB, including:
+- Database schema, migrations, seeding
+- Server API endpoints and resource naming
+- Client UI (Razor Pages) with auto‑submit filters, dynamic options, and pagination
+- AppHost project wiring and service ordering
+
+Key rules/takeaways:
+1. Forms and filter controls auto‑submit on change; no manual "Search" button needed.
+2. Maintain separate collections for `AvailableOptions` (to render) and `SelectedOptions` (bound to query).  
+3. API must expose endpoints for dynamic filter lists plus a search endpoint with array query params.  
+4. Resource naming:  
+   - `/api/v1/sitters/search`  
+   - `/api/v1/filters/service-types`  
+   - `/api/v1/filters/pet-types`  
+   - `/api/v1/filters/badges`  
+5. Pagination via `pageNumber` and `pageSize` query params, defaulting to 1 and 8.
+6. UI: render cards with sitter photo, stats, badges, location, and "X days ago" label; remove "View Profile" links.
+7. Reset control clears all selected filters and resets paging.
 
 ---
 
 ## 1. Data Layer
 
 ### 1.1 Rename DbContext
-- Rename `Data/FortuneDbContext.cs` → `Data/PetBnBDbContext.cs`.
-- Change class name `FortuneDbContext` → `PetBnBDbContext`.
-- Change constructor signature to `DbContextOptions<PetBnBDbContext>`.
-- Remove `DbSet<Fortune>`.
-- Add:
+- Move/rename `Data/FortuneDbContext.cs` → `Data/PetBnBDbContext.cs`.
+- Class: `public class PetBnBDbContext : DbContext` with ctor accepting `DbContextOptions<PetBnBDbContext>`.
+- Remove `DbSet<Fortune>`. Add:
   ```csharp
   public DbSet<Sitter> Sitters { get; set; }
   public DbSet<ServiceType> ServiceTypes { get; set; }
@@ -22,7 +37,7 @@ This spec describes all low‑level changes to transform the original RandomFort
   public DbSet<SitterPetType> SitterPetTypes { get; set; }
   public DbSet<SitterBadge> SitterBadges { get; set; }
   ```
-- In `OnModelCreating`, configure composite keys for each join entity:
+- In `OnModelCreating()`, configure composite keys:
   ```csharp
   modelBuilder.Entity<SitterServiceType>().HasKey(e => new { e.SitterId, e.ServiceTypeId });
   modelBuilder.Entity<SitterPetType>().HasKey(e => new { e.SitterId, e.PetTypeId });
@@ -30,14 +45,15 @@ This spec describes all low‑level changes to transform the original RandomFort
   ```
 
 ### 1.2 Entity Models
-Create `Data/Entities` folder with:
-- **Sitter.cs**: properties `(Id, Name, Bio, HeroPhotoUrl, Location, PricePerNight, StarRating, ReviewCount, AvailabilityUpdatedAt, RepeatClientCount)` plus navigation collections for SitterServiceTypes, SitterPetTypes, SitterBadges.
-- **ServiceType.cs**, **PetType.cs**, **Badge.cs**: each `(Id, Name)` plus navigation to relevant join collection.
-- **SitterServiceType.cs**, **SitterPetType.cs**, **SitterBadge.cs**: each join entity with foreign keys, navigation properties.
+- `Sitter.cs` properties:  
+  `Id`, `Name`, `Bio`, `HeroPhotoUrl`, `Location`, `PricePerNight`, `StarRating`, `ReviewCount`,  
+  `AvailabilityUpdatedAt`, `RepeatClientCount`, plus navigation to join collections.
+- `ServiceType.cs`, `PetType.cs`, `Badge.cs`: each \(Id, Name\) + navigation.
+- Join entities: `SitterServiceType`, `SitterPetType`, `SitterBadge`.
 
 ### 1.3 Migrations
-- Delete all existing migration files under `Data/Migrations` to remove legacy schema.
-- Scaffold a fresh initial migration:
+- Delete legacy migrations under `Data/Migrations`.
+- Scaffold fresh initial migration:
   ```pwsh
   dotnet ef migrations add CreatedDb -p Data -s AppHost
   dotnet ef database update -p Data -s AppHost
@@ -47,32 +63,27 @@ Create `Data/Entities` folder with:
 
 ## 2. DbMigrations Project
 
-### 2.1 Program.cs
-- Change `builder.AddNpgsqlDbContext<FortuneDbContext>("fortunesdb")` → `builder.AddNpgsqlDbContext<PetBnBDbContext>("petbnbdb")`.
-- Ensure every occurrence of the old connection key `fortunesdb` and type `FortuneDbContext` is updated to `petbnbdb` and `PetBnBDbContext` across all projects (programs, appsettings, migrations, AppHost, test scripts, etc.).
-- Ensure `DatabaseSeeder` and `Worker` use `PetBnBDbContext`, injection updated.
+### 2.1 Program.cs / Worker.cs
+- Register `PetBnBDbContext` with Npgsql, key `petbnbdb`.
+- Ensure `DatabaseSeeder` invoked after `dbContext.Database.MigrateAsync()`.
 
-### 2.2 Worker.cs
-- Inject `PetBnBDbContext` instead of `FortuneDbContext`.
-- After `dbContext.Database.MigrateAsync()`, resolve `DatabaseSeeder` and invoke `SeedDatabase()`.
-
-### 2.3 DatabaseSeeder.cs
-- Add `Bogus` NuGet dependency to `DbMigrations` project for realistic name generation.
-
-- Seed reference data if empty:
-  - ServiceTypes: `Boarding, House Sitting, Drop-In, Day Care, Walking`
-  - PetTypes: `Dog, Cat`
-  - Badges: `Verified Background Check, Star Sitter, Rover 101`
-- Seed **25 random sitters** with:
-  - Name: randomized first+last name.
-  - HeroPhotoUrl: use DiceBear avatar API `https://api.dicebear.com/9.x/avataaars/svg?seed={Uri.EscapeDataString(name)}&eyes=default,eyeRoll,happy,hearts,surprised,wink,winkWacky&mouth=default,serious,smile,twinkle`.
-  - Bio: pick a realistic bio from a curated list of 10 or more variations (e.g., "Lifelong animal lover...", "Certified pet CPR...", etc.).
-  - Location: chosen from Puget Sound ZIP codes within 20 mi of Seattle.
-  - PricePerNight: random 30–80.
-  - StarRating: random 3.0–5.0 (1 decimal).
-  - ReviewCount, RepeatClientCount: random.
-  - AvailabilityUpdatedAt: DateTime.UtcNow minus 0–7 days.
-- After saving sitters, assign random services, pets, badges to each via join tables.
+### 2.2 DatabaseSeeder.cs
+- Add `Bogus` NuGet for random data.
+- Seed reference tables if empty:
+  - ServiceTypes: `Boarding`, `House Sitting`, `Drop-In`, `Day Care`, `Walking`.
+  - PetTypes: `Dog`, `Cat`.
+  - Badges: `Verified Background Check`, `Star Sitter`, `Rover 101`.
+- Seed 25 random sitters:
+  - Realistic first/last names via Bogus.
+  - `HeroPhotoUrl` using DiceBear:  
+    `https://api.dicebear.com/9.x/avataaars/svg?seed={Uri.EscapeDataString(name)}&eyes=…`
+  - `Bio`: pick from a curated list of 10+ bios.
+  - `Location`: random Puget Sound ZIP within 20 mi of Seattle.
+  - `PricePerNight`: 30–80.
+  - `StarRating`: 3.0–5.0, one decimal.
+  - `ReviewCount`, `RepeatClientCount`: random integers.
+  - `AvailabilityUpdatedAt`: `DateTime.UtcNow.AddDays(-rand0to7)`.
+- After saving sitters, assign each random services, pet types, badges via join tables.
 
 ---
 
@@ -83,122 +94,156 @@ Create `Data/Entities` folder with:
   ```csharp
   builder.AddNpgsqlDbContext<PetBnBDbContext>("petbnbdb");
   ```
-- In `appsettings.json`, add:
+  
+### 3.2 Filter Option Endpoints
+- GET `/api/v1/filters/service-types` → `List<string>` (all service names).
+- GET `/api/v1/filters/pet-types` → `List<string>`.
+- GET `/api/v1/filters/badges` → `List<string>`.
+
+### 3.3 Search Endpoint
+- GET `/api/v1/sitters/search`
+- Query params:
+  - `string? location` (partial-match, ILike)
+  - `decimal? minPrice`, `decimal? maxPrice`
+  - `decimal? minRating`
+  - `string[]? serviceTypes`, `string[]? petTypes`, `string[]? badges`
+  - `int pageNumber = 1`, `int pageSize = 8`
+- Build EF query with `Include(s => ...)` and conditional filters.
+- Use `Skip((pageNumber-1)*pageSize).Take(pageSize)` for pagination.
+- Return:
   ```json
-  "ConnectionStrings": { "petbnbdb": "<YOUR_CONNECTION_STRING>" }
-  ```
-
-- Replace root fortune endpoint with **Search Endpoint**. **Important**: use array types (`string[]? serviceTypes`) for multi-value query params instead of `List<string>? serviceTypes` to avoid compilation errors.
-  ```csharp
-  app.MapGet("/api/v1/sitters/search", async (PetBnBDbContext db,
-      string? location,
-      decimal? minPrice,
-      decimal? maxPrice,
-      decimal? minRating,
-      string[]? serviceTypes,
-      string[]? petTypes,
-      string[]? badges) =>
-  {
-      var query = db.Sitters
-          .Include(s => s.SitterServiceTypes).ThenInclude(st => st.ServiceType)
-          .Include(s => s.SitterPetTypes).ThenInclude(pt => pt.PetType)
-          .Include(s => s.SitterBadges).ThenInclude(b => b.Badge)
-          .AsQueryable();
-
-      if (!string.IsNullOrWhiteSpace(location))
-          query = query.Where(s => EF.Functions.ILike(s.Location, $"%{location}%"));
-      if (minPrice.HasValue)
-          query = query.Where(s => s.PricePerNight >= minPrice.Value);
-      if (maxPrice.HasValue)
-          query = query.Where(s => s.PricePerNight <= maxPrice.Value);
-      if (minRating.HasValue)
-          query = query.Where(s => s.StarRating >= minRating.Value);
-      if (serviceTypes?.Any() == true)
-          query = query.Where(s => s.SitterServiceTypes.Any(st => serviceTypes.Contains(st.ServiceType.Name)));
-      if (petTypes?.Any() == true)
-          query = query.Where(s => s.SitterPetTypes.Any(pt => petTypes.Contains(pt.PetType.Name)));
-      if (badges?.Any() == true)
-          query = query.Where(s => s.SitterBadges.Any(b => badges.Contains(b.Badge.Name)));
-
-      var results = await query.Select(s => new {
-          s.Id,
-          s.Name,
-          s.HeroPhotoUrl,
-          s.PricePerNight,
-          s.StarRating,
-          s.ReviewCount,
-          s.AvailabilityUpdatedAt,
-          s.RepeatClientCount,
-          s.Location,
-          ServiceTypes = s.SitterServiceTypes.Select(x => x.ServiceType.Name),
-          PetTypes = s.SitterPetTypes.Select(x => x.PetType.Name),
-          Badges = s.SitterBadges.Select(x => x.Badge.Name)
-      }).ToListAsync();
-
-      return Results.Ok(results);
-  });
+  [
+    {
+      "id": 1,
+      "name": "Alice",
+      "heroPhotoUrl": "...",
+      "pricePerNight": 50,
+      "starRating": 4.5,
+      "reviewCount": 12,
+      "availabilityUpdatedAt": "2025-04-29T...Z",
+      "repeatClientCount": 3,
+      "location": "98101",
+      "serviceTypes": ["Boarding","Walking"],
+      "petTypes": ["Dog"],
+      "badges": ["Star Sitter"]
+    }
+  ]
   ```
 
 ---
 
-## 4. Client App (Blazor/Razor Pages)
+## 4. Client App (Blazor / Razor Pages)
 
 ### 4.1 Models
-- Create `Client/Models/SitterDto.cs` matching the API response shape.
+- Create `Client/Models/SitterDto.cs` matching above JSON shape.
 
 ### 4.2 API Client
 - Rename `FortuneApiClient.cs` → `SitterApiClient.cs`.
-- Implement `SearchSittersAsync(...)` building query string, calling `/api/v1/sitters/search` and parsing JSON to `List<SitterDto>`.
+- Implement methods:
+  ```csharp
+  Task<List<string>> GetServiceTypesAsync();
+  Task<List<string>> GetPetTypesAsync();
+  Task<List<string>> GetBadgesAsync();
+  Task<List<SitterDto>> SearchSittersAsync(string? location, decimal? minPrice, decimal? maxPrice, decimal? minRating,
+      List<string>? serviceTypes, List<string>? petTypes, List<string>? badges,
+      int pageNumber, int pageSize);
+  ```
+- Build query string with array params e.g. `?serviceTypes=Boarding&serviceTypes=Walking`.
 
 ### 4.3 Program.cs (Client)
-- Add `ApiBaseUrl` setting in `appsettings.json`.
-- Register `SitterApiClient` via `AddHttpClient<SitterApiClient>` using `Configuration["ApiBaseUrl"]`.
-- Ensure `MapRazorPages()` and static assets are mapped correctly.
+- Add `ApiBaseUrl` in `appsettings.json`.
+- Register:
+  ```csharp
+    builder.Services.AddHttpClient<SitterApiClient>(client =>
+    {
+        client.BaseAddress = new("https+http://server");
+    });
+  ```
+- Ensure `builder.Services.AddRazorPages()` and `app.MapRazorPages()`.
 
-### 4.4 Razor Page (`Index`)
-- Replace fortune card with search UI:
-  - Location input + auto-submit on change; remove manual Search button.
-  - Reset button to clear filters.
-  - Filters pane: Service Types, Pet Types, Badges; checkboxes auto-submit on change.
-  - Remove "View Profile" buttons (no separate profile page yet).
-  - Add pagination controls (8 per page) with Previous/Next links; bind `PageNumber` and `PageSize` in the page model.
-- Listing grid:
-  - Location input + Search/Reset buttons.
-  - Filters pane: Service Types, Pet Types, Badges.
-- Listing grid:
-  - Card per sitter: photo, name, price, rating, reviews, repeat client count, location, services, pet types, badges, "X days ago" label, "View Profile" link.
-- Empty state illustration + message + reset link.
+### 4.4 Index Razor Page (UI)
+- `@page "/"` with no form tag submit. All inputs auto‑submit on change.
+- Inject `SitterApiClient`.
+- PageModel properties:
+  ```csharp
+  [BindProperty(SupportsGet=true)] public int PageNumber { get; set; } = 1;
+  [BindProperty(SupportsGet=true)] public int PageSize { get; set; } = 8;
+  [BindProperty(SupportsGet=true)] public string? Location { get; set; }
+  [BindProperty(SupportsGet=true)] public List<string>? SelectedServiceTypes { get; set; }
+  [BindProperty(SupportsGet=true)] public List<string>? SelectedPetTypes { get; set; }
+  [BindProperty(SupportsGet=true)] public List<string>? SelectedBadges { get; set; }
 
-- In `Index.cshtml.cs`:
-  - Inject `SitterApiClient`.
-  - Bind GET properties: Location, ServiceTypes, PetTypes, Badges.
-  - OnGetAsync calls `sitterApiClient.SearchSittersAsync(...)` with bound filters.
-  - Provide `ServiceTypesOptions`, `PetTypesOptions`, `BadgesOptions` for rendering filters.
+  public List<string> AvailableServiceTypes { get; set; }
+  public List<string> AvailablePetTypes { get; set; }
+  public List<string> AvailableBadges { get; set; }
+  public List<SitterDto> Sitters { get; set; }
+  ```
+- In `OnGetAsync()`:  
+  1. Load `Available*` via filter endpoints.  
+  2. Call `SearchSittersAsync(...)` with selected filters and paging.  
+
+- UI markup:
+  - Text input for `Location` with `@bind` and `onchange` triggers page reload.
+  - For each filter category, render checkboxes from `Available*`; each checkbox bound to `Selected*` collection; `onchange` triggers GET with current query.
+  - Render "Reset" link clearing all selected values and resetting `PageNumber` to 1.
+  - Render grid of sitter cards (8 per page): photo, name, price, star rating, review count, repeat client count, badges list, location, "X days ago" since `AvailabilityUpdatedAt`.
+  - Pagination footer with "Previous" and "Next" links, disabling as needed; page links include current query params.
+  - No separate "View Profile" link.
+  - Empty state: display illustration + "No sitters found" + "Reset filters" link.
 
 ---
 
 ## 5. AppHost Wiring
 
-Update `AppHost/Program.cs`:
+In `AppHost/Program.cs`:
 - Rename database node from `fortunesdb` → `petbnbdb`.
-- `WaitFor`/`WithReference` for:
-  - `Projects.Server` → depends on `petbnbdb`.
-  - `Projects.DbMigrations` → depends on `petbnbdb`.
-  - `Projects.Client` → depends on `Projects.Server`.
+- Start order:
+  1. petbnbdb  
+  2. DbMigrations → references petbnbdb  
+  3. Server → references petbnbdb  
+  4. Client → references Server  
+
+Example:
+```csharp
+var builder = DistributedApplication.CreateBuilder(args);
+
+var petbnbdb = builder.AddPostgres("postgresql").AddDatabase("petbnbdb");
+
+var server = builder.AddProject<Projects.Server>("server")
+                    .WaitFor(petbnbdb)
+                    .WithReference(petbnbdb);
+
+builder.AddProject<Projects.DbMigrations>("dbmigrations")
+       .WaitFor(petbnbdb)
+       .WithReference(petbnbdb);
+
+builder.AddProject<Projects.Client>("client")
+       .WaitFor(server)
+       .WithReference(server);
+
+builder.Build().Run();
+```
 
 ---
 
 ## 6. Build & Run
 
-1. Scaffold and apply migrations:
+1. Scaffold & apply migrations:
    ```pwsh
-   dotnet ef migrations add InitialPetBnBSchema -p Data -s AppHost
+   dotnet ef migrations add CreatedDb -p Data -s AppHost
    dotnet ef database update -p Data -s AppHost
    ```
-2. Seed and start:
+2. Run migrations/seeder, server, client:
    ```pwsh
    dotnet run --project DbMigrations --no-build
    dotnet run --project Server      --no-build
    dotnet run --project Client      --no-build
    ```
-3. Open browser to `https://localhost:5001` and verify search UI & API.
+3. Visit `https://localhost:5001` to verify:
+   - Filters auto‑submit and update results
+   - Pagination works
+   - Dynamic filter options load correctly
+
+---
+
+_End of spec v2._

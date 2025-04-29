@@ -3,7 +3,7 @@
 using System.Net.Http.Json;
 using Client.Models;
 
-public class SitterApiClient
+public partial class SitterApiClient
 {
     private readonly HttpClient httpClient;
     public SitterApiClient(HttpClient httpClient)
@@ -42,5 +42,25 @@ public class SitterApiClient
 
         var result = await httpClient.GetFromJsonAsync<List<SitterDto>>($"/api/v1/sitters/search{qs}", cancellationToken);
         return result ?? new List<SitterDto>();
+    }
+}
+
+// Filter options
+public partial class SitterApiClient
+{
+    public async Task<List<string>> GetServiceTypesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await httpClient.GetFromJsonAsync<List<string>>("/api/v1/filters/service-types", cancellationToken);
+        return result ?? new List<string>();
+    }
+    public async Task<List<string>> GetPetTypesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await httpClient.GetFromJsonAsync<List<string>>("/api/v1/filters/pet-types", cancellationToken);
+        return result ?? new List<string>();
+    }
+    public async Task<List<string>> GetBadgesAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await httpClient.GetFromJsonAsync<List<string>>("/api/v1/filters/badges", cancellationToken);
+        return result ?? new List<string>();
     }
 }
