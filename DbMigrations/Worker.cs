@@ -1,4 +1,8 @@
 ﻿using Data;
+using Data.Entities;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -7,13 +11,26 @@ using System.Diagnostics;
 
 namespace DbMigrations;
 
-public class Worker(ILogger<Worker> logger,
-    IServiceProvider serviceProvider,
-    IHostEnvironment hostEnvironment,
-    IHostApplicationLifetime hostApplicationLifetime) : BackgroundService
+public class Worker : BackgroundService
 {
-    private readonly ActivitySource _activitySource = new(hostEnvironment.ApplicationName);
-    private DatabaseSeeder seeder; 
+    private readonly ILogger<Worker> logger;
+    private readonly IServiceProvider serviceProvider;
+    private readonly IHostEnvironment hostEnvironment;
+    private readonly IHostApplicationLifetime hostApplicationLifetime;
+    private readonly ActivitySource _activitySource;
+
+    public Worker(
+        ILogger<Worker> logger,
+        IServiceProvider serviceProvider,
+        IHostEnvironment hostEnvironment,
+        IHostApplicationLifetime hostApplicationLifetime)
+    {
+        this.logger = logger;
+        this.serviceProvider = serviceProvider;
+        this.hostEnvironment = hostEnvironment;
+        this.hostApplicationLifetime = hostApplicationLifetime;
+        this._activitySource = new ActivitySource(hostEnvironment.ApplicationName);
+    }
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -22,7 +39,7 @@ public class Worker(ILogger<Worker> logger,
         try
         {
             using var scope = serviceProvider.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<FortuneDbContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<PetBnBDbContext>();
 
             await EnsureDatabaseAsync(dbContext, cancellationToken);
         }
@@ -35,7 +52,7 @@ public class Worker(ILogger<Worker> logger,
         hostApplicationLifetime.StopApplication();
     }
 
-    private async Task EnsureDatabaseAsync(FortuneDbContext dbContext, CancellationToken cancellationToken)
+    private async Task EnsureDatabaseAsync(PetBnBDbContext dbContext, CancellationToken cancellationToken)
     {
         var dbCreator = dbContext.GetService<IRelationalDatabaseCreator>();
 
@@ -67,8 +84,8 @@ public class Worker(ILogger<Worker> logger,
                 {
                     await dbContext.Database.MigrateAsync(cancellationToken);
 
-                    using var scope = serviceProvider.CreateScope();
-                    seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+                    using var migrationScope = serviceProvider.CreateScope();
+                    var seeder = migrationScope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
                     await seeder.SeedDatabase();
                 }
                 catch (Exception exception)

@@ -1,14 +1,103 @@
 ﻿@page
-@model IndexModel
+@model Client.Pages.IndexModel
 @{
-    ViewData["Title"] = "Your Random Fortune";
+    ViewData["Title"] = "Find Pet Sitters";
 }
 
-<div class="d-flex flex-column align-items-center mt-5">
-    <div class="card" style="width: 30rem;">
-        <div class="card-body text-center">
-            @Model.Fortune
+<div class="container mt-4">
+    <h1 class="mb-4">Find Pet Sitters</h1>
+    <form method="get" asp-page="Index">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label asp-for="Location" class="form-label">Location (ZIP Code)</label>
+                <input asp-for="Location" class="form-control" placeholder="e.g., 98101" onchange="this.form.submit()" />
+            </div>
+            <div class="col-md-8 d-flex align-items-end">
+                <!-- Search is auto-triggered on filter change; manual button removed -->
+                <a asp-page="Index" class="btn btn-secondary">Reset</a>
+            </div>
         </div>
-    </div>
-    <a href="/" class="btn btn-primary mt-3">Moar Fortune</a>
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <h5>Service Types</h5>
+                @foreach (var option in Model.ServiceTypes)
+                {
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="ServiceTypes" value="@option" id="svc_@option" @(Model.ServiceTypes?.Contains(option) == true ? "checked" : "") onchange="this.form.submit()" />
+                        <label class="form-check-label" for="svc_@option">@option</label>
+                    </div>
+                }
+            </div>
+            <div class="col-md-4">
+                <h5>Pet Types</h5>
+                @foreach (var option in Model.PetTypes)
+                {
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="PetTypes" value="@option" id="pet_@option" @(Model.PetTypes?.Contains(option) == true ? "checked" : "") onchange="this.form.submit()" />
+                        <label class="form-check-label" for="pet_@option">@option</label>
+                    </div>
+                }
+            </div>
+            <div class="col-md-4">
+                <h5>Badges</h5>
+                @foreach (var option in Model.Badges)
+                {
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="Badges" value="@option" id="badge_@option" @(Model.Badges?.Contains(option) == true ? "checked" : "") onchange="this.form.submit()" />
+                        <label class="form-check-label" for="badge_@option">@option</label>
+                    </div>
+                }
+            </div>
+        </div>
+    </form>
+
+    @if (Model.Sitters.Any())
+    {
+        <div class="row">
+            @foreach (var sitter in Model.Sitters)
+            {
+                <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
+                    <div class="card h-100">
+                        <img src="@sitter.HeroPhotoUrl" class="card-img-top" alt="@sitter.Name" />
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">@sitter.Name</h5>
+                            <p class="card-text mb-1"><strong>@sitter.PricePerNight.ToString("C")</strong> per night</p>
+                            <p class="card-text mb-1">Rating: @sitter.StarRating ( @sitter.ReviewCount reviews )</p>
+                            <p class="card-text mb-1">Repeat Clients: @sitter.RepeatClientCount</p>
+                            <p class="card-text mb-1">Location: @sitter.Location</p>
+                            <p class="card-text mb-1">Services: @string.Join(", ", sitter.ServiceTypes)</p>
+                            <p class="card-text mb-1">Pet Types: @string.Join(", ", sitter.PetTypes)</p>
+                            <p class="card-text">Badges: 
+                                @foreach (var b in sitter.Badges)
+                                {
+                                    <span class="badge bg-info text-dark me-1">@b</span>
+                                }
+                            </p>
+                        </div>
+                        <div class="card-footer text-muted small">
+                            Updated @((DateTime.UtcNow - sitter.AvailabilityUpdatedAt).Days) days ago
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="d-flex justify-content-between my-4">
+            @if (Model.PageNumber > 1)
+            {
+                <a asp-page="Index" asp-route-Location="@Model.Location" asp-route-ServiceTypes="@Model.ServiceTypes" asp-route-PetTypes="@Model.PetTypes" asp-route-Badges="@Model.Badges" asp-route-PageNumber="@(Model.PageNumber-1)" class="btn btn-secondary">Previous</a>
+            }
+            @if (Model.Sitters.Count == Model.PageSize)
+            {
+                <a asp-page="Index" asp-route-Location="@Model.Location" asp-route-ServiceTypes="@Model.ServiceTypes" asp-route-PetTypes="@Model.PetTypes" asp-route-Badges="@Model.Badges" asp-route-PageNumber="@(Model.PageNumber+1)" class="btn btn-primary ms-auto">Next</a>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center mt-5">
+            <img src="/images/empty-state.png" alt="No sitters found" class="mb-3" style="max-width:200px;" />
+            <h4>No sitters match your filters</h4>
+            <p>Try adjusting your search criteria or resetting the filters.</p>
+        </div>
+    }
 </div>

@@ -1,17 +1,17 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
-var postgresdb = builder.AddPostgres("postgresql").AddDatabase("fortunesdb");
+var petbnbdb = builder.AddPostgres("postgresql").AddDatabase("petbnbdb");
 
-var server = builder.AddProject<Projects.Server>("server")
-                    .WaitFor(postgresdb)
-                    .WithReference(postgresdb);
+ var server = builder.AddProject<Projects.Server>("server")
+                    .WaitFor(petbnbdb)
+                    .WithReference(petbnbdb);
 
-builder.AddProject<Projects.DbMigrations>("dbmigrations")
-       .WaitFor(postgresdb)
-       .WithReference(postgresdb);
+ builder.AddProject<Projects.DbMigrations>("dbmigrations")
+       .WaitFor(petbnbdb)
+       .WithReference(petbnbdb);
 
-builder.AddProject<Projects.Client>("client")
-       .WaitFor(postgresdb)
+ builder.AddProject<Projects.Client>("client")
+       .WaitFor(server)
        .WithReference(server);
 
-builder.Build().Run();
+ builder.Build().Run();

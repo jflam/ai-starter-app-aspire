@@ -1,10 +1,11 @@
 using Data;
+using Data.Entities;
 using DbMigrations;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-builder.AddNpgsqlDbContext<FortuneDbContext>("fortunesdb");
+builder.AddNpgsqlDbContext<PetBnBDbContext>("petbnbdb");
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddScoped<DatabaseSeeder>();
 
