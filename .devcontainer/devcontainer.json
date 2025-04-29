@@ -9,8 +9,9 @@
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {},
 		"ghcr.io/devcontainers/features/powershell:1": {},
 		"ghcr.io/azure/azure-dev/azd:0": {},
-		"ghcr.io/devcontainers/features/node:1": {},
-		"ghcr.io/devcontainers/features/python:1": {}
+		// We won't need these for now, but we can add them later if needed.
+		// "ghcr.io/devcontainers/features/node:1": {},
+		// "ghcr.io/devcontainers/features/python:1": {}
 	},
 
 	"hostRequirements": {
@@ -20,12 +21,27 @@
 	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [5000, 5001],
-	// "portsAttributes": {
-	//		"5001": {
-	//			"protocol": "https"
-	//		}
-	// }
+	"forwardPorts": [5004,7276,7158,5287,17154,15127],
+	"portsAttributes": {
+		"7158": {
+			"protocol": "https"
+		},
+		"7276": {
+			"protocol": "https"
+		},
+		"17154": {
+			"protocol": "https"
+		},
+		"5004": {
+			"protocol": "http"
+		},
+		"5287": {
+			"protocol": "http"
+		},
+		"15127": {
+			"protocol": "http"
+		}
+	}
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "dotnet restore",
