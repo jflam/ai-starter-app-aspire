@@ -235,14 +235,8 @@ builder.Build().Run();
    ```
 2. Run migrations/seeder, server, client:
    ```pwsh
-   dotnet run --project DbMigrations --no-build
-   dotnet run --project Server      --no-build
-   dotnet run --project Client      --no-build
+   dotnet run --project AppHost/AppHost.csproj
    ```
-3. Visit `https://localhost:5001` to verify:
-   - Filters auto‑submit and update results
-   - Pagination works
-   - Dynamic filter options load correctly
 
 ---
 
