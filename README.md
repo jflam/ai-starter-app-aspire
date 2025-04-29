@@ -5,7 +5,8 @@ RandomFortuneApp is a distributed .NET solution that provides random fortune mes
 ## Prerequisites
 This repository comes ready for use with GitHub Codespaces. You can open the project up in an interactive, browser-based code editor by clicking this button. 
 
-[![Open in GitHub Codespaces](https://img.shields.io/static/v1?style=for-the-badge&label=GitHub+Codespaces&message=Open&color=lightgrey&logo=github)](https://github.com/bradygaster/RandomFortuneApp)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new?hide_repo_select=true&ref=main&repo=974492384)
+
 
 To work with .NET Aspire locally, you need the following installed:
 
