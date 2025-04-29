@@ -1,10 +1,14 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Your Random Fortune";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="d-flex flex-column align-items-center mt-5">
+    <div class="card" style="width: 30rem;">
+        <div class="card-body text-center">
+            @Model.Fortune
+        </div>
+    </div>
+    <a href="/" class="btn btn-primary mt-3">Moar Fortune</a>
 </div>

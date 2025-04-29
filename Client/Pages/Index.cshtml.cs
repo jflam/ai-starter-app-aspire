@@ -1,19 +1,13 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Client.Pages;
 
-public class IndexModel : PageModel
+public class IndexModel(ILogger<IndexModel> logger, FortuneApiClient fortuneApiClient) : PageModel
 {
-    private readonly ILogger<IndexModel> _logger;
+    public string Fortune { get; set; }
 
-    public IndexModel(ILogger<IndexModel> logger)
+    public async Task OnGet()
     {
-        _logger = logger;
-    }
-
-    public void OnGet()
-    {
-
+        Fortune = await fortuneApiClient.GetRandomFortune();
     }
 }
