@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace Client.Pages;
 
-public class IndexModel(ILogger<IndexModel> logger, FortuneApiClient fortuneApiClient) : PageModel
+public class IndexModel(FortuneApiClient fortuneApiClient) : PageModel
 {
-    public string Fortune { get; set; }
+    public string Fortune { get; set; } = string.Empty;
 
     public async Task OnGet()
     {
